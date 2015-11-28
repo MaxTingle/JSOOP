@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>An attempt to use JS prototypes to mimic class based OOP</title>
+	<script type="text/javascript" language="JavaScript" src="jsoop.js"></script>
+	<script type="text/javascript" language="JavaScript">
+		//base can be return object, be object or have static methods assigned to it
+		extend(function test() { //base class constructor will be fired aswell, resulting properties copied over
+			this.prot.protStr = "I am prot str!"; //protected fields
+
+			this.prot.sayProtStr = function() { //protected functions, share values between extender and extendee classes
+				console.log("base prot str is " + this.prot.protStr);
+			}.bind(this);
+
+			this.sayStr = function() {
+				return "reached base control";
+			};
+
+			this.baseInsMethod = function() {
+				console.log("base ins method!");
+			}
+		}, {
+			doBaseStatic: function() {
+				console.log("base static method");
+			},
+
+			doStatic: function() {
+				console.log("base overridden static method");
+			}
+		});
+
+		//prototypes also called
+		test.prototype.overrideBaseProto = function() {
+			console.log("base override protot called");
+		};
+
+		test.prototype.baseProtoMethod = function() {
+			console.log("base protot called");
+		};
+
+		//overriding and copying of base directly assigned works too
+		test.baseOtherAssignedStatic = function() {
+			console.log("base other assigned static");
+		};
+
+		//extending an existing class
+		extend(test, function hello(constructorArg) {
+			this.str = constructorArg;
+
+			this.sayStr = function() {
+				console.log("base says: " + this.base.sayStr());
+				console.log("reached sayStr top level, str is " + this.str);
+			};
+
+			this.sayStr(); //Can immediately invoke functions and already have access to base class
+
+			console.log("Base class prot str is " + this.prot.protStr);
+			this.prot.protStr += "_MODIFIED BY TOp";
+			this.prot.sayProtStr();
+			console.log("PROT OBJ", this.prot);
+		}, {
+			doStatic: function() {
+				hello.base.doStatic();
+				console.log("top static");
+			}
+		});
+
+		//directly assigned static supported too
+		hello.otherAssignedStatic = function() {
+			console.log("directly assigned static");
+		};
+
+		//can even assign new functions to base class after extend and will get them
+		test.prototype.afterTest = function() {
+			console.log("after test");
+		};
+
+		//can assign prototpye methods to the extended class at will
+		hello.prototype.protoMethod = function() {
+			console.log("proto called");
+		};
+		hello.prototype.overrideBaseProto = function() {
+			console.log("proto for override called");
+			this.base.overrideBaseProto();
+		};
+
+		hello.doBaseStatic();
+		hello.doStatic(); //all static methods accessible without hello method call but can call hello as method to get static methods
+		hello.otherAssignedStatic();
+		hello.baseOtherAssignedStatic();
+
+		var ins = new hello("yoyoyoyoyoy");
+		ins.sayItForMe = "test";
+		ins.base = null; //base is read only, this has no effect
+		ins.sayStr();
+		ins.baseInsMethod();
+		ins.baseProtoMethod();
+		ins.protoMethod();
+		ins.overrideBaseProto();
+		ins.afterTest();
+		console.log("PROT OUT OF CONTEXT", ins.prot); //can't access prototype object as we're not inside the class
+
+		console.log("\n\nBEGIN TEST 2\n\n");
+		var ins2 = new hello("test2");
+		console.log("Ins1 public property", ins2.sayItForMe); //properties don't carry over
+		ins2.sayStr();
+		ins2.baseInsMethod();
+		ins2.baseProtoMethod();
+		ins2.protoMethod();
+		ins2.overrideBaseProto();
+		ins2.afterTest();
+	</script>
+</head>
+<body>
+Open your console
+</body>
+</html>
