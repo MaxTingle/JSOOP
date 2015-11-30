@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>An attempt to use JS prototypes to mimic class based OOP</title>
+	<script type="text/javascript" language="JavaScript" src="jsoop.js"></script>
+	<script type="text/javascript" language="JavaScript">
+		//classes outside of scope can still be extended
+		function baseClassToExtend() {
+			this.someOtherVar = "test";
+		}
+
+		jsoopClassify(function DoSomethingThenCallback(callbackHandlerIns) {
+			//declare private class, have to bind to send propper scope and assign to this
+			jsoopClassify.bind(this)(baseClassToExtend, function PrivateSubClass(somevar) {
+				this.somevar = somevar;
+
+				this.doShow = function() {
+					console.log("Jolly well old chap, child value is " + this.someOtherVar, this.somevar);
+				};
+			});
+
+			this.startSomething = function() {
+				if(callbackHandlerIns.hasData()) {
+					callbackHandlerIns.handle();
+				}
+
+				console.log("Init priv class"); //private classes assigned to the instance
+				var ins = new this.PrivateSubClass("iamtest");
+				ins.doShow();
+			};
+		}, {
+			//sub class support
+			CallbackHandler: jsoopClassify(function(data) { //no name means the class type will be returned to callee
+				this.data = data;
+
+				this.hasData = function() {
+					return this.data != undefined;
+				};
+
+				this.handle = function() {
+					console.log("MAH DATUH IS " + this.data);
+				};
+			})
+		});
+
+		var worker = new DoSomethingThenCallback(new DoSomethingThenCallback.CallbackHandler("test data"));
+		worker.startSomething();
+	</script>
+</head>
+<body>Open your console</body>
+</html>

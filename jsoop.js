@@ -1,24 +1,45 @@
 (function() { //remove from scope of others so we don't mess with any variables
-	window.extend = function(from, to, staticMethods) {
-		if (!to) { //called like extend(function helloWorld(){});
+ 	function error(msg) {
+		if(console.error) {
+			console.error(msg);
+		}
+		else if(console.log) {
+			console.log(msg);
+		}
+		else {
+			throw new Error(msg);
+		}
+	}
+
+	if(window.jsoopClassify) {
+		return error("JSOOP failed to load, function already defined");
+	}
+	else if(typeof(Function) == "undefined" || typeof(Function.prototype) == "undefined" || typeof(Object.defineProperty) == "undefined") {
+		return error("JSOOP failed to load, browser not supported");
+	}
+
+	window.jsoopClassify = function(from, to, staticMethods) {
+		if (!to) { //called like jsoopClassify(function helloWorld(){});
 			to = from;
 			from = {};
 		}
-		else if (typeof(to) == "object") { //called like extend(function helloWorld(){}, { staticMethod: function(){} })
+		else if (typeof(to) == "object") { //called like jsoopClassify(function helloWorld(){}, { staticMethod: function(){} })
 			staticMethods = to;
 			to = from;
 			from = {};
 		}
 
-		window[to.name] = function () {
+		var assignContext = this; //preserve context, don't want to bind function to this otherwise will loose context
+		var callHandler = function() {
 			if (this === window) { //Called without new, return static methods
-				return window[to.name];
+				return to.name ? assignContext[to.name] : undefined;
 			}
-
-			//Copy over any new proto methods
-			for (var index in window[to.name].prototype) {
-				if (typeof(to.prototype[index]) == "undefined") {
-					to.prototype[index] = window[to.name].prototype[index];
+			else if(to.name) {
+				//Copy over any new proto methods from the context object
+				for (var index in assignContext[to.name].prototype) {
+					if (typeof(to.prototype[index]) == "undefined") {
+						to.prototype[index] = assignContext[to.name].prototype[index];
+					}
 				}
 			}
 
@@ -83,16 +104,25 @@
 			return ins;
 		};
 
+		if(!to.name) { //called like a function, in an object or something to create a class, return wrapper
+			return callHandler;
+		}
+
+		//Assign class to context
+		assignContext[to.name] = callHandler;
+
 		//Copy base class' static methods
 		var baseStaticMethods = (typeof(from) == "function" ? from() || from : from) || {};
 		for (var index in baseStaticMethods) {
-			window[to.name][index] = baseStaticMethods[index];
+			assignContext[to.name][index] = baseStaticMethods[index];
 		}
 
 		//Copy this class' static methods over, retain base class
-		staticMethods.base = baseStaticMethods;
-		for (index in staticMethods) {
-			window[to.name][index] = staticMethods[index];
+		if(staticMethods) {
+			staticMethods.base = baseStaticMethods;
+			for (index in staticMethods) {
+				assignContext[to.name][index] = staticMethods[index];
+			}
 		}
 	}
 })();
